@@ -66,6 +66,7 @@ namespace Acar.PlayerPrefsExplorer.Editor
         void Save()
         {
             PlayerPrefs.SetString(key, draft ?? "");
+            PrefsReader.NoteWritten(key);
             PlayerPrefs.Save();
             PlayerPrefsExplorerWindow.RefreshAll();
             Close();

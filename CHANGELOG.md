@@ -12,6 +12,9 @@ All notable changes to this package are documented in this file.
   package (`PT_Run`, `PT_Settings`) are now hidden while **Show Unity Keys** is off. Like other Unity
   keys, they are also left untouched by Delete All, snapshot restore, and Replace import.
 - **Show Unity Keys** is now visibly highlighted while it's on.
+- macOS: added, imported, or restored keys now appear immediately instead of after a delay and a
+  manual Refresh. Keys are read through `defaults` (current data) instead of the lazily written
+  `.plist` file, and keys written by the window are always included.
 
 ## [1.0.0] - 2026-10-18
 

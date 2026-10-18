@@ -31,6 +31,17 @@ namespace Acar.PlayerPrefsExplorer.Editor
         public static string Company => PlayerSettings.companyName;
         public static string Product => PlayerSettings.productName;
 
+        /// <summary>
+        /// Keys written through this tool since the last domain reload. They're merged into every read,
+        /// so a new key shows up immediately even if the platform storage hasn't been flushed to disk yet.
+        /// </summary>
+        static readonly HashSet<string> WrittenKeys = new HashSet<string>();
+
+        public static void NoteWritten(string key)
+        {
+            if (!string.IsNullOrEmpty(key)) WrittenKeys.Add(key);
+        }
+
         public static bool IsUnityKey(string key)
         {
             foreach (var pattern in HiddenUnityKeyPatterns)
@@ -74,6 +85,10 @@ namespace Acar.PlayerPrefsExplorer.Editor
                 message = $"Could not read PlayerPrefs storage at:\n{StorageLocation}\n\n{e.Message}";
             }
 
+            raw.AddRange(WrittenKeys); // deleted ones are dropped by the HasKey check below
+            if (message != null && WrittenKeys.Count > 0 && raw.Exists(PlayerPrefs.HasKey))
+                message = null; // storage not on disk yet, but we know keys exist
+
             var keys = new List<string>();
             var seen = new HashSet<string>();
             foreach (var key in raw)
@@ -109,25 +124,19 @@ namespace Acar.PlayerPrefsExplorer.Editor
         static string StorageLocation =>
             Path.Combine(Home, "Library", "Preferences", $"unity.{Company}.{Product}.plist");
 
+        static string Domain => $"unity.{Company}.{Product}";
+
         static bool ReadPlatformKeys(List<string> keys)
         {
-            if (!File.Exists(StorageLocation)) return false;
-
-            // The plist is usually binary; plutil converts it to XML on stdout.
-            var info = new System.Diagnostics.ProcessStartInfo("/usr/bin/plutil",
-                $"-convert xml1 -o - \"{StorageLocation}\"")
+            // macOS writes the .plist file lazily (via cfprefsd), so right after PlayerPrefs.Save()
+            // the file can be seconds out of date. `defaults` asks cfprefsd directly and is current.
+            string xml = RunTool("/usr/bin/defaults", $"export \"{Domain}\" -", out _);
+            if (xml == null)
             {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-            string xml;
-            using (var process = System.Diagnostics.Process.Start(info))
-            {
-                xml = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-                if (process.ExitCode != 0)
-                    throw new IOException($"plutil exited with code {process.ExitCode}.");
+                // Fallback: read the file itself. It's usually binary; plutil converts it to XML.
+                if (!File.Exists(StorageLocation)) return false;
+                xml = RunTool("/usr/bin/plutil", $"-convert xml1 -o - \"{StorageLocation}\"", out int exitCode)
+                      ?? throw new IOException($"plutil exited with code {exitCode}.");
             }
 
             // Top-level <dict> alternates <key>name</key> and a value element.
@@ -137,6 +146,26 @@ namespace Acar.PlayerPrefsExplorer.Editor
                 if (node.Name == "key")
                     keys.Add(node.InnerText);
             return true;
+        }
+
+        /// <summary>Runs a command-line tool and returns its stdout, or null if it exits with an error.</summary>
+        static string RunTool(string path, string arguments, out int exitCode)
+        {
+            var info = new System.Diagnostics.ProcessStartInfo(path, arguments)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true, // keep "domain does not exist" out of the Editor log
+                CreateNoWindow = true
+            };
+            using (var process = System.Diagnostics.Process.Start(info))
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                process.StandardError.ReadToEnd();
+                process.WaitForExit();
+                exitCode = process.ExitCode;
+                return exitCode == 0 ? output : null;
+            }
         }
 #elif UNITY_EDITOR_LINUX
         static string StorageLocation =>

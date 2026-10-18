@@ -49,6 +49,7 @@ namespace Acar.PlayerPrefsExplorer.Editor
         /// <summary>Writes this entry to PlayerPrefs (without calling Save).</summary>
         public void Write()
         {
+            PrefsReader.NoteWritten(Key);
             switch (Type)
             {
                 case PrefType.Int: PlayerPrefs.SetInt(Key, IntValue); break;
