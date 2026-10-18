@@ -17,6 +17,7 @@ namespace Acar.PlayerPrefsExplorer.Editor
 
         const float RowHeight = 22f, TypeWidth = 80f, ActionsWidth = 130f;
         static readonly Color LineColor = new Color(0f, 0f, 0f, 0.3f);
+        static readonly Color PressedColor = new Color(0.24f, 0.49f, 0.9f, 0.45f); // readable in light and dark skins
 
         // Persisted across domain reloads.
         [SerializeField] bool showUnityKeys;
@@ -100,7 +101,13 @@ namespace Acar.PlayerPrefsExplorer.Editor
             searchField.RegisterValueChangedCallback(e => { search = e.newValue ?? ""; UpdateView(); });
 
             var unityToggle = new ToolbarToggle { text = "Show Unity Keys", value = showUnityKeys };
-            unityToggle.RegisterValueChangedCallback(e => { showUnityKeys = e.newValue; Refresh(); });
+            ShowPressed(unityToggle, showUnityKeys);
+            unityToggle.RegisterValueChangedCallback(e =>
+            {
+                showUnityKeys = e.newValue;
+                ShowPressed(unityToggle, e.newValue);
+                Refresh();
+            });
 
             ToolbarButton snapshots = null;
             snapshots = new ToolbarButton(() => ShowSnapshotMenu(snapshots)) { text = "Snapshots ▾" };
@@ -220,10 +227,46 @@ namespace Acar.PlayerPrefsExplorer.Editor
                     floatField.RegisterValueChangedCallback(e => ApplyValue(entry, PrefEntry.FormatFloat(e.newValue)));
                     return floatField;
                 default:
+                    if (IsMultiline(entry.Value))
+                        return CreateMultilinePreview(entry);
                     var textField = new TextField { isDelayed = true, value = entry.Value };
                     textField.RegisterValueChangedCallback(e => ApplyValue(entry, e.newValue ?? ""));
                     return textField;
             }
+        }
+
+        /// <summary>
+        /// Multi-line strings can't be edited in a single-line field, so the row shows a read-only
+        /// one-line preview and an Edit… button that opens <see cref="StringEditorWindow"/>.
+        /// </summary>
+        VisualElement CreateMultilinePreview(PrefEntry entry)
+        {
+            var preview = Grow(new TextField
+            {
+                isReadOnly = true,
+                value = Preview(entry.Value),
+                tooltip = "Multi-line value. Use Edit… to change it."
+            });
+            var edit = new Button(() => StringEditorWindow.Open(entry.Key, entry.Value, position)) { text = "Edit…" };
+            return Row(preview, edit);
+        }
+
+        const int PreviewMaxLength = 200;
+
+        static bool IsMultiline(string value) => value != null && value.IndexOfAny(new[] { '\n', '\r' }) >= 0;
+
+        /// <summary>Collapses line breaks (and the indentation around them) to single spaces and truncates.</summary>
+        static string Preview(string value)
+        {
+            string flat = System.Text.RegularExpressions.Regex.Replace(value ?? "", @"\s*[\r\n]+\s*", " ").Trim();
+            return flat.Length <= PreviewMaxLength ? flat : flat.Substring(0, PreviewMaxLength) + "…";
+        }
+
+        /// <summary>Re-reads storage in every open explorer window (used after saving from another window).</summary>
+        internal static void RefreshAll()
+        {
+            foreach (var window in Resources.FindObjectsOfTypeAll<PlayerPrefsExplorerWindow>())
+                window.Refresh();
         }
 
         // ---------------------------------------------------------------- Data and view
@@ -511,6 +554,10 @@ namespace Acar.PlayerPrefsExplorer.Editor
         }
 
         void Notify(string message) => ShowNotification(new GUIContent(message));
+
+        /// <summary>Tints a toolbar toggle while it's on, since the default checked style is hard to see.</summary>
+        static void ShowPressed(VisualElement toggle, bool pressed) =>
+            toggle.style.backgroundColor = pressed ? new StyleColor(PressedColor) : new StyleColor(StyleKeyword.Null);
 
         static VisualElement Row(params VisualElement[] children)
         {

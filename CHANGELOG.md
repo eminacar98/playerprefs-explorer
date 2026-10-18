@@ -2,6 +2,17 @@
 
 All notable changes to this package are documented in this file.
 
+## [1.0.1] - 2026-10-18
+
+### Fixed
+- Multi-line string values (e.g. JSON) no longer render as a clipped middle line. The row shows a
+  read-only one-line preview with an **Edit…** button that opens a scrollable multi-line editor
+  with Save and Cancel. Single-line strings are still edited inline.
+- Unity internal keys from `unity_*` (e.g. `unity_connect.session_id`) and the Performance Testing
+  package (`PT_Run`, `PT_Settings`) are now hidden while **Show Unity Keys** is off. Like other Unity
+  keys, they are also left untouched by Delete All, snapshot restore, and Replace import.
+- **Show Unity Keys** is now visibly highlighted while it's on.
+
 ## [1.0.0] - 2026-10-18
 
 ### Added

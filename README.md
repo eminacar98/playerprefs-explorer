@@ -17,6 +17,7 @@ Requires Unity 2021.3 or newer (including Unity 6). No third-party dependencies;
 - **Browse** every PlayerPrefs key with its type (int, float, string) and value.
 - **Search** keys (case-insensitive) and **sort** by key or type (click the column header).
 - **Edit** values inline; changes apply on Enter or when the field loses focus.
+  Multi-line strings (e.g. JSON) show a one-line preview; click **Edit…** to change them in a larger editor.
 - **Change type** from the Type dropdown; values are converted where possible (e.g. `"5"` → `5`).
 - **Add / delete** keys, or delete all of them at once (with confirmation).
 - **Snapshots**: save the current state under a name and restore, rename, or delete it later.
@@ -52,7 +53,7 @@ Open **Tools > PlayerPrefs Explorer**.
 
 - Reads the **Editor's** PlayerPrefs storage only (the one used in Play Mode), not prefs on a device
   or from a standalone build.
-- Unity's internal keys (e.g. `unity.*`, `UnityGraphicsQuality`) are hidden by default; use
+- Unity's internal keys (e.g. `unity.*`, `unity_*`, `UnityGraphicsQuality`, `PT_Run`) are hidden by default; use
   **Show Unity Keys** to see them.
 - Types are detected through the PlayerPrefs API, so an int key holding exactly `int.MinValue`
   may be misdetected.

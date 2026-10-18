@@ -1,7 +1,7 @@
 {
   "name": "com.acar.playerprefs-explorer",
   "displayName": "PlayerPrefs Explorer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "unity": "2021.3",
   "description": "View, edit, snapshot, and export Unity PlayerPrefs from an editor window.",
   "author": {

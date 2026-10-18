@@ -13,17 +13,34 @@ namespace Acar.PlayerPrefsExplorer.Editor
     /// </summary>
     internal static class PrefsReader
     {
-        /// <summary>Prefixes of keys Unity writes for its own use.</summary>
-        static readonly string[] UnityKeyPrefixes = { "unity.", "UnityGraphicsQuality", "Screenmanager " };
+        /// <summary>
+        /// Keys Unity and its packages write for their own use, hidden unless "Show Unity Keys" is on.
+        /// An entry ending in '*' matches as a prefix (case-insensitive); any other entry must match
+        /// the key name exactly (case-sensitive). Add new patterns here.
+        /// </summary>
+        static readonly string[] HiddenUnityKeyPatterns =
+        {
+            "unity.*",                // editor/engine internals
+            "unity_*",                // e.g. unity_connect.installation_id, unity_connect.session_id
+            "UnityGraphicsQuality*",
+            "Screenmanager *",        // window size, fullscreen mode, etc.
+            "PT_Run",                 // Performance Testing package
+            "PT_Settings",            // Performance Testing package
+        };
 
         public static string Company => PlayerSettings.companyName;
         public static string Product => PlayerSettings.productName;
 
         public static bool IsUnityKey(string key)
         {
-            foreach (var prefix in UnityKeyPrefixes)
-                if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                    return true;
+            foreach (var pattern in HiddenUnityKeyPatterns)
+            {
+                bool isPrefix = pattern.EndsWith("*", StringComparison.Ordinal);
+                bool match = isPrefix
+                    ? key.StartsWith(pattern.Substring(0, pattern.Length - 1), StringComparison.OrdinalIgnoreCase)
+                    : string.Equals(key, pattern, StringComparison.Ordinal);
+                if (match) return true;
+            }
             return false;
         }
 
