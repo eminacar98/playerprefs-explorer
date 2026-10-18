@@ -8,7 +8,7 @@ Free, open-source Unity editor window to view, edit, snapshot, and export Player
 
 1. Open **Window > Package Manager**.
 2. Click **+ > Add package from git URL...**
-3. Enter `https://github.com/<USERNAME>/playerprefs-explorer.git`
+3. Enter `https://github.com/eminacar98/playerprefs-explorer.git`
 
 Requires Unity 2021.3 or newer (including Unity 6). No third-party dependencies; Editor-only code.
 
